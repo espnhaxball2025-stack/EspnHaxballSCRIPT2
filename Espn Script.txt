@@ -1,0 +1,430 @@
+// ---------- Config ----------
+var ROOM_NAME = "⚽⚽JUEGAN TODOS EN ESPN HAXBALL⚽⚽";
+var room = HBInit({
+  roomName: ROOM_NAME,
+  maxPlayers: 30,
+  public: true,
+  token: "thr1.AAAAAGm0mLpJjwE0XF7RJw.5Hkzo2VV-nU"
+});
+
+var LINKS = {
+  kick: "https://kick.com/espnhaxball",
+  twitch: "https://www.twitch.tv/espn_haxball",
+  youtube: "https://www.youtube.com/@EspnHaxballOFICIAL",
+  instagram: "https://www.instagram.com/espnhaxball/",
+  discord: "https://discord.com/invite/jKq3gdhKSF"
+};
+
+var OWNER_PASS = "nnahesgay";
+var ADMIN_PASS = "espn2233";
+
+var ownerId = null;
+var admins = {};
+var autojoinEnabled = true;
+var autoStartEnabled = true;
+var hiddenHost = {};
+
+// Emojis y colores
+var EMOJI_OWNER = "👑";
+var EMOJI_ADMIN = "🔷";
+var EMOJI_RED = "🔴";
+var EMOJI_BLUE = "🔵";
+var COLOR_ADMIN = 0x0000FF; 
+var COLOR_OWNER = 0xFFFF00;
+
+var MEMIDE_MESSAGES = [
+  "¡Increíble, eso es casi un alfiler! 😂",
+  "Pequeñito pero con actitud. 😏",
+  "Tamaño de bolsillo, pero con estilo. 😅",
+  "Suficiente para impresionar a una hormiga. 🐜",
+  "Compacto y decidido. 💪",
+  "Ni tan grande ni tan chico, equilibrio perfecto. ⚖️",
+  "Se defiende, no te preocupes. 😉",
+  "Buen promedio, aprobado. ✅",
+  "Casi en la zona de respeto. 👀",
+  "Diez centímetros de pura confianza. 🔥",
+  "Once y subiendo, cuidado. 😎",
+  "Doce: nivel competitivo. 🏆",
+  "Trece: la suerte te acompaña. 🍀",
+  "Catorce: ya se nota. 👏",
+  "Quince: mitad de camino al mito. 🧭",
+  "Dieciséis: elegante y firme. ✨",
+  "Diecisiete: digno de mención. 📝",
+  "Dieciocho: wow, aplausos. 👏👏",
+  "Diecinueve: casi leyenda. 🏅",
+  "Veinte: nivel pro. 🚀",
+  "Veintiuno: impresionante. 💥",
+  "Veintidós: ya es para contar historias. 📖",
+  "Veintitrés: respeto ganado. 🙌",
+  "Veinticuatro: sobresaliente. 🌟",
+  "Veinticinco: mito urbano. 🐉",
+  "Veintiséis: épico. ⚔️",
+  "Veintisiete: leyenda en formación. 🛡️",
+  "Veintiocho: historia para el chat. 🗣️",
+  "Veintinueve: casi inalcanzable. 🏔️",
+  "Treinta: nivel dios. 👑"
+];
+
+// ---------- Utilidades ----------
+function fancyLine(char, len) {
+  var s = "";
+  for (var i = 0; i < len; i++) s += char;
+  return s;
+}
+
+function getTeamCounts() {
+  var players = room.getPlayerList();
+  var red = 0, blue = 0;
+  for (var i = 0; i < players.length; i++) {
+    if (players[i].team === 1) red++;
+    if (players[i].team === 2) blue++;
+  }
+  return { red: red, blue: blue };
+}
+
+function teamEmoji(team) {
+  if (team === 1) return EMOJI_RED;
+  if (team === 2) return EMOJI_BLUE;
+  return "⚪";
+}
+
+function assignToSmallerTeam(player) {
+  var counts = getTeamCounts();
+  if (counts.red <= counts.blue) {
+    room.setPlayerTeam(player.id, 1);
+  } else {
+    room.setPlayerTeam(player.id, 2);
+  }
+}
+
+function shuffleArray(a) {
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = a[i];
+    a[i] = a[j];
+    a[j] = tmp;
+  }
+  return a;
+}
+
+function isAdmin(player) {
+  return admins[player.id] === true || (ownerId !== null && player.id === ownerId);
+}
+
+function findPlayerByName(name) {
+  if (!name) return null;
+  var list = room.getPlayerList();
+  name = name.toLowerCase();
+  for (var i = 0; i < list.length; i++) {
+    if (list[i].name.toLowerCase().indexOf(name) !== -1) return list[i];
+  }
+  return null;
+}
+
+// ---------- Bienvenida ----------
+function welcomePlayer(player) {
+  if (hiddenHost[player.id]) return;
+  var circle = teamEmoji(player.team);
+  var header = fancyLine("═", 40);
+  var msg = header + "\n";
+  msg += "🎉  BIENVENIDO A " + ROOM_NAME + "  🎉\n";
+  msg += "Jugador: " + player.name + " (" + circle + ")\n";
+  msg += "Host: " + ROOM_NAME + "\n";
+  msg += header;
+  room.sendAnnouncement(msg, player.id, 0xFFD700, "bold", 0);
+}
+
+// ---------- Eventos ----------
+room.onPlayerJoin = function(player) {
+  if (player.name === ROOM_NAME) {
+    hiddenHost[player.id] = true;
+    room.setPlayerTeam(player.id, 0);
+    room.setPlayerAdmin(player.id, false);
+    return;
+  }
+
+  if (autojoinEnabled) {
+    assignToSmallerTeam(player);
+  } else {
+    room.setPlayerTeam(player.id, 0);
+  }
+  setTimeout(function() {
+    var p = room.getPlayer(player.id);
+    if (p) welcomePlayer(p);
+  }, 500);
+  var counts = getTeamCounts();
+  room.sendAnnouncement("➡️ " + player.name + " se ha unido. Equipos: " + EMOJI_RED + " " + counts.red + " - " + EMOJI_BLUE + " " + counts.blue, null, 0x00BFFF, "normal", 0);
+};
+
+room.onPlayerLeave = function(player) {
+  if (hiddenHost[player.id]) {
+    delete hiddenHost[player.id];
+    return;
+  }
+  var counts = getTeamCounts();
+  room.sendAnnouncement("⬅️ " + player.name + " ha salido. Equipos: " + EMOJI_RED + " " + counts.red + " - " + EMOJI_BLUE + " " + counts.blue, null, 0xFF4500, "normal", 0);
+};
+
+room.onPlayerTeamChange = function(player) {
+  if (hiddenHost[player.id]) return;
+  var circle = teamEmoji(player.team);
+  room.sendAnnouncement("🔁 " + player.name + " ahora está en " + (player.team === 1 ? "RED " + EMOJI_RED : player.team === 2 ? "BLUE " + EMOJI_BLUE : "ESPECTADOR"), null, 0xFFFFFF, "normal", 0);
+};
+
+room.onGameStop = function(byPlayer) {
+  if (autoStartEnabled) {
+    room.sendAnnouncement("⏱️ Autostart: El próximo partido arranca en 2 segundos...", null, 0x00FF99, "bold", 1);
+    setTimeout(function() {
+      room.startGame();
+    }, 2000);
+  }
+};
+
+// ---------- Chat y comandos ----------
+room.onPlayerChat = function(player, message) {
+  var msg = message.trim();
+  if (hiddenHost[player.id]) return false;
+  if (msg.charAt(0) === "!") {
+    handleCommand(player, msg);
+    return false;
+  }
+
+  var displayName = player.name;
+  var color = 0xFFFFFF;
+  if (player.id === ownerId) {
+    displayName = EMOJI_OWNER + " " + player.name;
+    color = COLOR_OWNER;
+  } else if (isAdmin(player)) {
+    displayName = EMOJI_ADMIN + " ADMIN | " + player.name;
+    color = COLOR_ADMIN;
+  }
+
+  var circle = teamEmoji(player.team);
+  var formatted = "💬 " + displayName + " (" + circle + "): " + msg;
+  room.sendAnnouncement(formatted, null, color, "normal", 1);
+  return false;
+};
+
+function handleCommand(player, msg) {
+  var parts = msg.split(" ");
+  var cmd = parts[0].toLowerCase();
+  var arg = parts.slice(1).join(" ").trim();
+
+  if (cmd === "!admin") {
+    if (arg === ADMIN_PASS) {
+      admins[player.id] = true;
+      room.setPlayerAdmin(player.id, true);
+      room.sendAnnouncement(EMOJI_ADMIN + " ADMIN | " + player.name + " ahora es Admin.", null, COLOR_ADMIN, "bold", 0);
+    } else {
+      room.sendAnnouncement("🔒 Contraseña ADMIN incorrecta. Usa: !admin <contraseña>", player.id, 0xFF0000, "normal", 0);
+    }
+    return;
+  }
+
+  if (cmd === "!owner") {
+    if (arg === OWNER_PASS) {
+      ownerId = player.id;
+      admins[player.id] = true;
+      room.setPlayerAdmin(player.id, true);
+      room.sendAnnouncement(EMOJI_OWNER + " OWNER | " + player.name + " ahora es Owner (admin real).", null, COLOR_OWNER, "bold", 0);
+    } else {
+      room.sendAnnouncement("🔒 Contraseña OWNER incorrecta. Usa: !owner <contraseña>", player.id, 0xFF0000, "normal", 0);
+    }
+    return;
+  }
+
+  if (cmd === "!help") {
+    var base = "✨ Comandos ✨\n";
+    base += "• !help\n";
+    base += "• !discord\n";
+    base += "• !ig\n";
+    base += "• !youtube\n";
+    base += "• !twitch\n";
+    base += "• !nv  !bb (Despedida)\n";
+    base += "• !meme  !memide  !8ball  !slap  !hug\n";
+    base += "• Para ser Admin: !admin <contraseña>\n";
+    base += "• Para ser Owner: !owner <contraseña>\n";
+    if (isAdmin(player)) {
+      base += "\n🔐 Comandos ADMIN 🔐\n";
+      base += "• !autojoin on/off\n";
+      base += "• !autostart on/off\n";
+      base += "• !rr\n";
+      base += "• !balanceo\n";
+      base += "• !kick <nombre>\n";
+    }
+    room.sendAnnouncement(base, player.id, 0xFFFFFF, "normal", 0);
+    return;
+  }
+
+  if (cmd === "!nv" || cmd === "!bb") {
+    room.sendAnnouncement("👋 " + player.name + " tiró la de humo y se fue de la sala.", null, 0xFF4500, "normal", 1);
+    room.kickPlayer(player.id, "¡Nos vemos! Suerte con el laburo.");
+    return;
+  }
+
+  if (cmd === "!autostart") {
+    if (!isAdmin(player)) {
+      room.sendAnnouncement("❌ Solo admins pueden cambiar autostart.", player.id, 0xFF0000, "normal", 0);
+      return;
+    }
+    if (arg === "on") {
+      autoStartEnabled = true;
+      room.sendAnnouncement("✅ Autostart ACTIVADO por " + player.name, null, 0x00FF00, "bold", 1);
+    } else if (arg === "off") {
+      autoStartEnabled = false;
+      room.sendAnnouncement("⛔ Autostart DESACTIVADO por " + player.name, null, 0xFF4500, "bold", 1);
+    } else {
+      room.sendAnnouncement("Uso: !autostart on / !autostart off", player.id, 0xFFFF00, "normal", 0);
+    }
+    return;
+  }
+
+  if (cmd === "!discord") {
+    room.sendAnnouncement("📣 ••• DISCORD ••• " + LINKS.discord + " •••", player.id, 0x7289DA, "bold", 0);
+    return;
+  }
+  if (cmd === "!ig" || cmd === "!instagram") {
+    room.sendAnnouncement("📸 ••• INSTAGRAM ••• " + LINKS.instagram + " •••", player.id, 0xE1306C, "bold", 0);
+    return;
+  }
+  if (cmd === "!youtube" || cmd === "!yt") {
+    room.sendAnnouncement("▶️ ••• YOUTUBE ••• " + LINKS.youtube + " •••", player.id, 0xFF0000, "bold", 0);
+    return;
+  }
+  if (cmd === "!twitch") {
+    room.sendAnnouncement("🎮 ••• TWITCH ••• " + LINKS.twitch + " •••", player.id, 0x6441A4, "bold", 0);
+    return;
+  }
+
+  if (cmd === "!kick") {
+    if (!isAdmin(player)) {
+      room.sendAnnouncement("❌ Solo admins pueden usar !kick", player.id, 0xFF0000, "bold", 0);
+      return;
+    }
+    if (!arg) {
+      room.sendAnnouncement("Uso: !kick <nombre>", player.id, 0xFFFF00, "normal", 0);
+      return;
+    }
+    var target = findPlayerByName(arg);
+    if (target) {
+      room.kickPlayer(target.id, "Expulsado por admin: " + player.name);
+      room.sendAnnouncement("👢 " + target.name + " expulsado por " + player.name, null, 0xFF4500, "bold", 0);
+    } else {
+      room.sendAnnouncement("Jugador no encontrado: " + arg, player.id, 0xFFFF00, "normal", 0);
+    }
+    return;
+  }
+
+  if (cmd === "!meme") {
+    var memes = [
+      "Cuando el rival se confía... ¡GOLAZO! 😂",
+      "Ese pase fue más perdido que mi WiFi... 🤦",
+      "Modo pro activado... o no. 😅"
+    ];
+    var pick = memes[Math.floor(Math.random() * memes.length)];
+    room.sendAnnouncement("🎭 MEME: " + pick, player.id, 0xFFFFFF, "normal", 0);
+    return;
+  }
+
+  if (cmd === "!memide") {
+    var target = findPlayerByName(arg) || player;
+    var size = Math.floor(Math.random() * 30) + 1;
+    var msgIndex = Math.max(0, Math.min(29, size - 1));
+    var custom = MEMIDE_MESSAGES[msgIndex];
+    var out = "📏 A @" + target.name + " le mide " + size + " Cm — " + custom;
+    room.sendAnnouncement(out, null, 0xFF69B4, "bold", 0);
+    return;
+  }
+
+  if (cmd === "!8ball") {
+    var answers = ["Sí", "No", "Tal vez", "Pregunta otra vez", "Definitivamente", "No cuentes con ello"];
+    room.sendAnnouncement("🔮 8Ball: " + answers[Math.floor(Math.random() * answers.length)], player.id, 0x8A2BE2, "normal", 0);
+    return;
+  }
+
+  if (cmd === "!slap") {
+    var target = findPlayerByName(arg);
+    if (!target) {
+      room.sendAnnouncement("Uso: !slap <nombre>", player.id, 0xFFFF00, "normal", 0);
+      return;
+    }
+    room.sendAnnouncement("👋 " + player.name + " abofetea a " + target.name + " con una pelota imaginaria!", null, 0xFFFFFF, "normal", 0);
+    return;
+  }
+
+  if (cmd === "!hug") {
+    var target = findPlayerByName(arg) || player;
+    room.sendAnnouncement("🤗 " + player.name + " abraza a " + target.name + " — paz y goles.", null, 0xFFDAB9, "normal", 0);
+    return;
+  }
+
+  if (cmd === "!autojoin") {
+    if (!isAdmin(player)) {
+      room.sendAnnouncement("❌ Solo admins pueden cambiar autojoin.", player.id, 0xFF0000, "normal", 0);
+      return;
+    }
+    var param = arg.toLowerCase();
+    if (param === "on") {
+      autojoinEnabled = true;
+      room.sendAnnouncement("✅ Autojoin ACTIVADO por " + player.name, null, 0x00FF00, "bold", 0);
+    } else if (param === "off") {
+      autojoinEnabled = false;
+      room.sendAnnouncement("⛔ Autojoin DESACTIVADO por " + player.name, null, 0xFF4500, "bold", 0);
+    } else {
+      room.sendAnnouncement("Uso: !autojoin on / !autojoin off", player.id, 0xFFFF00, "normal", 0);
+    }
+    return;
+  }
+
+  if (cmd === "!rr") {
+    if (!isAdmin(player)) {
+      room.sendAnnouncement("❌ Solo admins pueden reiniciar (!rr).", player.id, 0xFF0000, "normal", 0);
+      return;
+    }
+    room.stopGame();
+    setTimeout(function() {
+      room.startGame();
+      room.sendAnnouncement("🔁 Partida reiniciada por " + player.name, null, 0x00FF00, "bold", 0);
+    }, 500);
+    return;
+  }
+
+  if (cmd === "!balanceo") {
+    if (!isAdmin(player)) {
+      room.sendAnnouncement("❌ Solo admins pueden usar !balanceo.", player.id, 0xFF0000, "normal", 0);
+      return;
+    }
+    var players = room.getPlayerList().filter(function(p){ return p.team !== 0 && !hiddenHost[p.id]; });
+    var all = players.slice();
+    shuffleArray(all);
+    for (var i = 0; i < all.length; i++) {
+      var team = (i % 2 === 0) ? 1 : 2;
+      room.setPlayerTeam(all[i].id, team);
+    }
+    room.sendAnnouncement("🔀 Equipos mezclados por " + player.name, null, 0x00FFFF, "bold", 0);
+    return;
+  }
+
+  if (cmd === "!autojoinstatus" || cmd === "!autojoin?") {
+    room.sendAnnouncement("Autojoin está " + (autojoinEnabled ? "ACTIVADO" : "DESACTIVADO"), player.id, 0xFFFFFF, "normal", 0);
+    return;
+  }
+
+  room.sendAnnouncement("Comando no reconocido. Escribe !help para ver comandos.", player.id, 0xFFFF00, "normal", 0);
+}
+
+room.onRoomLink = function(url) {
+  var header = fancyLine("═", 50);
+  var welcome = header + "\n";
+  welcome += "🎆 " + ROOM_NAME + " — Sala Oficial 🎆\n";
+  welcome += "Host: " + ROOM_NAME + "\n";
+  welcome += "Comandos: !help\n";
+  welcome += "Links oficiales:\n";
+  welcome += "• Kick: " + LINKS.kick + "\n";
+  welcome += "• Twitch: " + LINKS.twitch + "\n";
+  welcome += "• YouTube: " + LINKS.youtube + "\n";
+  welcome += "• Instagram: " + LINKS.instagram + "\n";
+  welcome += "• Discord: " + LINKS.discord + "\n";
+  welcome += header;
+  room.sendAnnouncement(welcome, null, 0x00FF99, "bold", 0);
+};
