@@ -1,0 +1,12 @@
+{
+  "name": "haxball-bot",
+  "version": "1.0.0",
+  "description": "Bot de Haxball 24/7",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "puppeteer": "^21.0.0"
+  }
+}
