@@ -1,9 +1,10 @@
 {
-  "name": "haxball-bot",
+  "name": "espn-haxball-bot",
   "version": "1.0.0",
-  "description": "Bot de Haxball 24/7",
+  "description": "Bot 24/7 ESPN Haxball",
   "main": "index.js",
   "scripts": {
+    "postinstall": "npx puppeteer browser install",
     "start": "node index.js"
   },
   "dependencies": {
