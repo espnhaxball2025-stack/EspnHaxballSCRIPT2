@@ -4,10 +4,10 @@
   "description": "Bot 24/7 ESPN Haxball",
   "main": "index.js",
   "scripts": {
-    "postinstall": "npx puppeteer browser install",
     "start": "node index.js"
   },
   "dependencies": {
-    "puppeteer": "^21.0.0"
+    "puppeteer-core": "^21.0.0",
+    "@sparticuz/chromium": "^119.0.0"
   }
 }
